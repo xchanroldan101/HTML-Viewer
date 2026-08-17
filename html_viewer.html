@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time HTML Viewer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --border-color: #334155;
+            --accent-color: #38bdf8;
+            --button-hover: #0284c7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            height: 60px;
+        }
+
+        .logo {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .clear-btn {
+            background-color: transparent;
+            color: #94a3b8;
+            border: 1px solid var(--border-color);
+        }
+
+        .clear-btn:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            position: relative;
+            height: calc(100vh - 60px);
+        }
+
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .panel-header {
+            background-color: #111827;
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            background-color: #111827;
+            color: #e2e8f0;
+            border: none;
+            padding: 15px;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+        }
+
+        .divider {
+            width: 6px;
+            background-color: var(--border-color);
+            cursor: col-resize;
+            transition: background-color 0.2s;
+        }
+
+        .divider:hover {
+            background-color: var(--accent-color);
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            border: none;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span>&lt;/&gt;</span> Live HTML Viewer
+        </div>
+        <div class="controls">
+            <button class="clear-btn" onclick="clearCode()">Clear</button>
+            <button onclick="loadSample()">Load Sample</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="panel" id="input-panel">
+            <div class="panel-header">HTML Input (Include CSS/JS if needed)</div>
+            <textarea id="html-code" placeholder="Paste or type your HTML code here..."></textarea>
+        </div>
+        
+        <div class="divider" id="drag-divider"></div>
+        
+        <div class="panel" id="preview-panel">
+            <div class="panel-header">Live Preview</div>
+            <iframe id="preview"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const textarea = document.getElementById('html-code');
+        const iframe = document.getElementById('preview');
+        const divider = document.getElementById('drag-divider');
+        const inputPanel = document.getElementById('input-panel');
+        const container = document.querySelector('.container');
+
+        const sampleCode = `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 400px;
+        }
+        button {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Hello World! 👋</h2>
+        <p>This is a live preview of your HTML and inline CSS code.</p>
+        <button onclick="alert('JavaScript works too!')">Click Me</button>
+    </div>
+</body>
+</html>`;
+
+        function updatePreview() {
+            const code = textarea.value;
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(code);
+            iframeDoc.close();
+        }
+
+        function loadSample() {
+            textarea.value = sampleCode;
+            updatePreview();
+        }
+
+        function clearCode() {
+            textarea.value = '';
+            updatePreview();
+        }
+
+        // Live updating on input
+        textarea.addEventListener('input', updatePreview);
+
+        // Resizable split panels logic
+        let isDragging = false;
+
+        divider.addEventListener('mousedown', function(e) {
+            isDragging = true;
+            document.body.style.cursor = 'col-resize';
+            // Disable pointer events on iframe to prevent drag loss
+            iframe.style.pointerEvents = 'none';
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            
+            const containerRect = container.getBoundingClientRect();
+            const pointerX = e.clientX - containerRect.left;
+            
+            // Calculate percentage width for input panel
+            let percentage = (pointerX / containerRect.width) * 100;
+            
+            // Constrain between 15% and 85%
+            if (percentage < 15) percentage = 15;
+            if (percentage > 85) percentage = 85;
+            
+            inputPanel.style.flex = `0 0 ${percentage}%`;
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                document.body.style.cursor = 'default';
+                iframe.style.pointerEvents = 'auto';
+            }
+        });
+
+        // Initialize with sample
+        loadSample();
+    </script>
+</body>
+</html>
