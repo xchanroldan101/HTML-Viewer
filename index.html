@@ -149,7 +149,7 @@
             <span>&lt;/&gt;</span> Live HTML Viewer
         </div>
         <div class="controls">
-            <button class="clear-btn" onclick="clearCode()">Clear</button>
+            <button class="clear-btn" onclick="clearCode()">New</button>
             <button onclick="loadSample()">Load Sample</button>
         </div>
     </header>
@@ -234,7 +234,16 @@
         }
 
         function clearCode() {
-            textarea.value = '';
+            textarea.value = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+</body>
+</html>`;
             updatePreview();
         }
 
